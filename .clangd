@@ -1,0 +1,12 @@
+CompileFlags:
+  Add: [
+    -std=c++23,
+    -isystem/usr/lib/clang/19/include,
+    -isystem/usr/lib/gcc/arm-none-eabi/14.2.0/../../../../arm-none-eabi/include/c++/14.2.0,
+    -isystem/usr/lib/gcc/arm-none-eabi/14.2.0/../../../../arm-none-eabi/include/c++/14.2.0/arm-none-eabi/thumb/v7+fp/softfp,
+    -isystem/usr/lib/gcc/arm-none-eabi/14.2.0/../../../../arm-none-eabi/include/c++/14.2.0/backward,
+    -isystem/usr/lib/gcc/arm-none-eabi/14.2.0/include,
+    -isystem/usr/lib/gcc/arm-none-eabi/14.2.0/include-fixed,
+    -isystem/usr/lib/gcc/arm-none-eabi/14.2.0/../../../../arm-none-eabi/include
+    ]
+  Remove: [ -isystem*, --std=gnu++23 ]
