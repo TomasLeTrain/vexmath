@@ -23,7 +23,8 @@ inline float32x4_t V_rsqrt(float32x4_t number) {
 }
 
 /**
- * @brief Returns square root of vector of numbers. Only an approximation, don't use if precision is needed
+ * @brief Returns square root of vector of numbers. Only an approximation, don't
+ * use if precision is needed
  *
  * @param number input vector
  * @return square root of vector
