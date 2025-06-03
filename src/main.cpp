@@ -1,10 +1,10 @@
 #include "main.h"
-#include "vexmath/entropy.h"
-#include "vexmath/fast_prng/Xoroshiro128plus_vectorized.h"
-#include "vexmath/functions/vectorized_exp_log.h"
-#include "vexmath/functions/vectorized_trig.h"
-#include "vexmath/functions/vectorized_trig_taylor.h"
-#include "vexmath/ziggurat/normal.h"
+#include "vexmath/entropy.hpp"
+#include "vexmath/fast_prng/Xoroshiro128plus_vectorized.hpp"
+#include "vexmath/functions/vectorized_exp_log.hpp"
+#include "vexmath/functions/vectorized_trig.hpp"
+#include "vexmath/functions/vectorized_trig_taylor.hpp"
+#include "vexmath/ziggurat/normal.hpp"
 #include <arm_neon.h>
 
 using namespace std;
@@ -21,6 +21,7 @@ void competition_initialize() {}
 
 void autonomous() {}
 
+// TODO: separate tests, test exp and log
 void tests() {
     Vuniform_int32_t rand_int_gen(1, 100, 1230);
     cout << "testing random ints in the range [1, 100]\n";

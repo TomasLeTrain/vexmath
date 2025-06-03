@@ -5,7 +5,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "vexmath/fast_prng/SplitMix32.h"
+#include "vexmath/fast_prng/SplitMix32.hpp"
 
 class Xoroshiro128plus
 {

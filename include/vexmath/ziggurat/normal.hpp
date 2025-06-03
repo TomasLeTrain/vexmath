@@ -7,8 +7,8 @@
  * normal() -> Standard normal PRN variate. 
  *
  * */
-#include "vexmath/ziggurat/shared.h" /* Functions used both in exponential.h and here */
-#include "vexmath/ziggurat/exponential.h"    /* Sampling from the tail uses exponential PRNs  */
+#include "vexmath/ziggurat/shared.hpp" /* Functions used both in exponential.h and here */
+#include "vexmath/ziggurat/exponential.hpp"    /* Sampling from the tail uses exponential PRNs  */
 #define __NORM_BINS__	253
 
 namespace math {

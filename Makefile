@@ -12,12 +12,11 @@ BINDIR=$(ROOT)/bin
 SRCDIR=$(ROOT)/src
 INCDIR=$(ROOT)/include
 
-# gotta make sure code is blazingly fast
-# MFLAGS=-mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=softfp -O3 -g
-
 WARNFLAGS+=
 EXTRA_CFLAGS=
 EXTRA_CXXFLAGS=
+
+LIBDIR=$(INCDIR)/$(LIBNAME)
 
 # makes compilation faster by allowing use of multiple cores
 #
@@ -44,7 +43,7 @@ EXCLUDE_SRC_FROM_LIB+=$(foreach file, $(SRCDIR)/main,$(foreach cext,$(CEXTS),$(f
 # files that get distributed to every user (beyond your source archive) - add
 # whatever files you want here. This line is configured to add all header files
 # that are in the directory include/LIBNAME
-TEMPLATE_FILES=$(INCDIR)/$(LIBNAME)/*.h $(INCDIR)/$(LIBNAME)/*.hpp
+TEMPLATE_FILES=$(LIBDIR)/*.hpp $(LIBDIR)/ziggurat/*.hpp $(LIBDIR)/fast_prng/*.hpp $(LIBDIR)/functions/*.hpp
 
 .DEFAULT_GOAL=quick
 

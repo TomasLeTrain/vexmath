@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include "vexmath/fast_prng/Xoroshiro128plus.h"
+#include "vexmath/fast_prng/Xoroshiro128plus.hpp"
 #include <memory>
 
 /* Test to see if rejection sampling is required in the overhang. See Fig. 2
