@@ -1,10 +1,10 @@
 #include "main.h"
-#include "math/entropy.h"
-#include "math/fast_prng/Xoroshiro128plus_vectorized.h"
-#include "math/functions/vectorized_exp_log.h"
-#include "math/functions/vectorized_trig.h"
-#include "math/functions/vectorized_trig_taylor.h"
-#include "math/ziggurat/normal.h"
+#include "vexmath/entropy.h"
+#include "vexmath/fast_prng/Xoroshiro128plus_vectorized.h"
+#include "vexmath/functions/vectorized_exp_log.h"
+#include "vexmath/functions/vectorized_trig.h"
+#include "vexmath/functions/vectorized_trig_taylor.h"
+#include "vexmath/ziggurat/normal.h"
 #include <arm_neon.h>
 
 using namespace std;

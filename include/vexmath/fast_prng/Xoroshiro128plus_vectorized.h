@@ -6,7 +6,7 @@
 
 #include <arm_neon.h>
 #include <stdint.h>
-#include "math/fast_prng/SplitMix32.h"
+#include "vexmath/fast_prng/SplitMix32.h"
 
 class VXoroshiro128plus
 {

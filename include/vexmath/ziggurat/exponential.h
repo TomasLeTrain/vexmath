@@ -7,7 +7,7 @@
  * exponential() -> Exponentially-distributed PRN with mean 1. 
  * */
 
-#include "math/ziggurat/shared.h"
+#include "vexmath/ziggurat/shared.h"
 
 #define	__EXP_LAYERS__	252
 
