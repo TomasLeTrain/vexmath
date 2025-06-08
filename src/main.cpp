@@ -5,12 +5,17 @@
 #include "vexmath/functions/vectorized_trig.hpp"
 #include "vexmath/functions/vectorized_trig_taylor.hpp"
 #include "vexmath/ziggurat/normal.hpp"
+
 #include <arm_neon.h>
+
+#include "tests/neon_mathfun_test.hpp"
+#include "tests/taylor_test.hpp"
+#include "tests/xoroshiro128_test.hpp"
 
 using namespace std;
 
 void initialize() {
-    pros::c::serctl(SERCTL_DISABLE_COBS, NULL);
+    // pros::c::serctl(SERCTL_DISABLE_COBS, NULL);
 
     // pros::lcd::register_btn1_cb(on_center_button);
 }
@@ -22,7 +27,12 @@ void competition_initialize() {}
 void autonomous() {}
 
 // TODO: separate tests, test exp and log
-void tests() {
+void general_tests() {
+    xoroshiro128_test();
+    taylor_test();
+    // neon_mathfun_test();
+    return;
+
     Vuniform_int32_t rand_int_gen(1, 100, 1230);
     cout << "testing random ints in the range [1, 100]\n";
     for (int i = 0; i < 10; i++) {
@@ -103,5 +113,5 @@ void tests() {
 }
 
 void opcontrol() {
-    tests();
+    general_tests();
 }

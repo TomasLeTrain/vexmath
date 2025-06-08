@@ -6,6 +6,7 @@
 #pragma once
 
 #include "vexmath/fast_prng/SplitMix32.hpp"
+#include <random>
 #include <stdint.h>
 
 class Xoroshiro128plus {
@@ -115,5 +116,71 @@ class Xoroshiro128plus {
         s[1] = s1;
         s[2] = s2;
         s[3] = s3;
+    }
+};
+
+class uniform_int32_t : public Xoroshiro128plus {
+  private:
+    int32_t a;
+    int32_t b;
+    std::uniform_int_distribution<int> dist;
+
+  public:
+    uniform_int32_t() {}
+
+    explicit uniform_int32_t(int32_t a, int32_t b, uint64_t seed)
+        : a(a),
+          b(b),
+          dist(a,b)
+           {
+        setSeed(seed);
+    }
+
+    int32_t get_int() {
+        return dist(*this);
+    }
+    int32_t operator()() {
+        return get_int();
+    }
+};
+
+class uniform_float32_t : public Xoroshiro128plus {
+  private:
+    float a;
+    float b;
+    float d;
+
+  public:
+    uniform_float32_t() {}
+
+    explicit uniform_float32_t(float a, float b, uint64_t seed)
+        : a(a),
+          b(b) {
+        d = b - a;
+        setSeed(seed);
+    }
+
+    /**
+     * @brief makes a random floating point number in the range of [0,1)
+     *
+     * @return returns a random float in the range [0,1)
+     */
+    float get_reduced_float(void) {
+        const uint32_t exponent = 127U << 23;
+        uint32_t manipulated_uint = exponent | (next() >> 9);
+        return reinterpret_cast<float&>(manipulated_uint) - 1.0;
+    }
+
+    /**
+     * @brief makes vector of floating point numbers in the range of [a,b)
+     *
+     * @return vector of random floats
+     */
+    float get_float(void) {
+        return a + (d * get_reduced_float());
+    }
+
+    float operator()() {
+        return get_float();
     }
 };

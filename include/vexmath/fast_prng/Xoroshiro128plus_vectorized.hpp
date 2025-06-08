@@ -10,11 +10,6 @@
 #include <stdint.h>
 
 class VXoroshiro128plus {
-  private:
-    inline static uint32x4_t rotl(const uint32x4_t x, const int k) {
-        return vshlq_n_u32(x, k) | vshrq_n_u32(x, 32 - k);
-    }
-
   protected:
     uint32x4x4_t s;
 
@@ -44,9 +39,9 @@ class VXoroshiro128plus {
     }
 
     uint32x4_t next(void) {
-        const uint32x4_t result = s.val[0] + s.val[3];
+        uint32x4_t result = s.val[0] + s.val[3];
 
-        const uint32x4_t t = vshlq_n_u32(s.val[1], 9);
+        uint32x4_t t = vshlq_n_u32(s.val[1], 9);
 
         s.val[2] ^= s.val[0];
         s.val[3] ^= s.val[1];
@@ -55,8 +50,8 @@ class VXoroshiro128plus {
 
         s.val[2] ^= t;
 
-        s.val[3] = rotl(s.val[3], 11);
-
+        // rotl
+        s.val[3] = vshlq_n_u32(s.val[3], 11) | vshrq_n_u32(s.val[3], 32 - 11);
         return result;
     }
 
@@ -70,10 +65,10 @@ class VXoroshiro128plus {
                                          0x6fa035c3,
                                          0x77f2db5b };
 
-        uint32x4_t s0 = vmovq_n_u32(0);
-        uint32x4_t s1 = vmovq_n_u32(0);
-        uint32x4_t s2 = vmovq_n_u32(0);
-        uint32x4_t s3 = vmovq_n_u32(0);
+        uint32x4_t s0 = vdupq_n_u32(0);
+        uint32x4_t s1 = vdupq_n_u32(0);
+        uint32x4_t s2 = vdupq_n_u32(0);
+        uint32x4_t s3 = vdupq_n_u32(0);
         for (int i = 0; i < sizeof JUMP / sizeof *JUMP; i++)
             for (int b = 0; b < 32; b++) {
                 if (JUMP[i] & UINT32_C(1) << b) {
@@ -126,23 +121,28 @@ class VXoroshiro128plus {
 
 class Vuniform_int32_t : public VXoroshiro128plus {
   private:
-    int32x4_t va;
-    int32x4_t vb;
-    int32x4_t vd;
+    int32_t a;
+    int32_t b;
+    int32_t d;
 
   public:
     Vuniform_int32_t() {}
 
-    explicit Vuniform_int32_t(int32_t a, int32_t b, uint64_t seed) {
-        static const int32x4_t vone = vmovq_n_s32(1);
-        va = vdupq_n_s32(a);
-        vb = vdupq_n_s32(b);
-        vd = vb - va + vone;
+    explicit Vuniform_int32_t(int32_t a, int32_t b, uint64_t seed)
+        : a(a),
+          b(b),
+          d(b - a + 1) {
         setSeed(seed);
     }
 
+    // TODO: technically biased, maybe a rejection sampling approach could be
+    // tried(although its not ideal since we are working with vectors)
+    // could also try to convert to float,manipulate it, then convert to int
     int32x4_t get_int() {
-        return va + (vreinterpretq_s32_u32(next()) % vd);
+        // the modulus is not implemented in arm neon, so it is likely not
+        // vectorized. would be a good idea to switch to one of the alternatives
+        // outlined above
+        return vdupq_n_f32(a) + (vreinterpretq_s32_u32(next()) % d);
     }
 
     int32x4_t operator()() {
@@ -152,17 +152,17 @@ class Vuniform_int32_t : public VXoroshiro128plus {
 
 class Vuniform_float32_t : public VXoroshiro128plus {
   private:
-    float32x4_t va;
-    float32x4_t vb;
-    float32x4_t vd;
+    float a;
+    float b;
+    float d;
 
   public:
     Vuniform_float32_t() {}
 
-    explicit Vuniform_float32_t(float32_t a, float32_t b, uint64_t seed) {
-        va = vdupq_n_f32(a);
-        vb = vdupq_n_f32(b);
-        vd = vb - va;
+    explicit Vuniform_float32_t(float32_t a, float32_t b, uint64_t seed)
+        : a(a),
+          b(b),
+          d(b - a) {
         setSeed(seed);
     }
 
@@ -172,9 +172,9 @@ class Vuniform_float32_t : public VXoroshiro128plus {
      * @return vector of random floats
      */
     float32x4_t get_reduced_float(void) {
-        static const uint32x4_t vexponent = vmovq_n_u32(127U << 23);
-        static const float32x4_t vone = vmovq_n_f32(1);
-        return vreinterpretq_f32_u32(vexponent | vshrq_n_u32(next(), 9)) - vone;
+        uint32x4_t vexponent = vdupq_n_u32(127U << 23);
+        return vreinterpretq_f32_u32(vexponent | vshrq_n_u32(next(), 9)) -
+               vdupq_n_f32(1);
     }
 
     /**
@@ -183,7 +183,7 @@ class Vuniform_float32_t : public VXoroshiro128plus {
      * @return vector of random floats
      */
     float32x4_t get_float(void) {
-        return va + (vd * get_reduced_float());
+        return vdupq_n_f32(a) + vmulq_n_f32(get_reduced_float(), d);
     }
 
     float32x4_t operator()() {
