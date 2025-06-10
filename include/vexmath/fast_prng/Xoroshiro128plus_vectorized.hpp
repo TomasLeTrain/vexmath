@@ -7,15 +7,19 @@
 
 #include "vexmath/fast_prng/SplitMix32.hpp"
 #include <arm_neon.h>
+#include <cstdint>
 #include <stdint.h>
 
+/**
+ * @class VXoroshiro128plus
+ * @brief Vectorized version of the xoroshiro PRNG generator
+ *
+ */
 class VXoroshiro128plus {
   protected:
     uint32x4x4_t s;
 
   public:
-    VXoroshiro128plus() {}
-
     /**
      * @brief Explicit constructor which sets the rng seed.
      * @param seed the random seed
@@ -126,13 +130,19 @@ class Vuniform_int32_t : public VXoroshiro128plus {
     int32_t d;
 
   public:
-    Vuniform_int32_t() {}
+    explicit Vuniform_int32_t(uint64_t seed)
+        : VXoroshiro128plus(seed) {}
 
     explicit Vuniform_int32_t(int32_t a, int32_t b, uint64_t seed)
         : a(a),
           b(b),
-          d(b - a + 1) {
-        setSeed(seed);
+          d(b - a + 1),
+          VXoroshiro128plus(seed) {}
+
+    void setBounds(int32_t a, int32_t b) {
+        this->a = a;
+        this->b = a;
+        this->d = b - a + 1;
     }
 
     // TODO: technically biased, maybe a rejection sampling approach could be
@@ -155,15 +165,23 @@ class Vuniform_float32_t : public VXoroshiro128plus {
     float a;
     float b;
     float d;
-
+    float k;
   public:
-    Vuniform_float32_t() {}
+    explicit Vuniform_float32_t(uint64_t seed)
+        : VXoroshiro128plus(seed) {}
 
-    explicit Vuniform_float32_t(float32_t a, float32_t b, uint64_t seed)
+    explicit Vuniform_float32_t(float a, float b, uint64_t seed)
         : a(a),
           b(b),
-          d(b - a) {
-        setSeed(seed);
+          d(b - a),
+          k(d / static_cast<float>(UINT32_MAX)),
+          VXoroshiro128plus(seed) {}
+
+    void set_bounds(float a, float b){
+        this->a = a;
+        this->b = b;
+        this->d = b - a;
+        this->k = d / static_cast<float>(UINT32_MAX);
     }
 
     /**
@@ -172,8 +190,10 @@ class Vuniform_float32_t : public VXoroshiro128plus {
      * @return vector of random floats
      */
     float32x4_t get_reduced_float(void) {
-        uint32x4_t vexponent = vdupq_n_u32(127U << 23);
-        return vreinterpretq_f32_u32(vexponent | vshrq_n_u32(next(), 9)) -
+        // techincally discards some of bits generated, however the discarded
+        // (lowest) bits are of lower quality anyways.
+        uint32x4_t Vexponent = vdupq_n_u32(127U << 23);
+        return vreinterpretq_f32_u32(Vexponent | vshrq_n_u32(next(), 9)) -
                vdupq_n_f32(1);
     }
 
@@ -183,10 +203,22 @@ class Vuniform_float32_t : public VXoroshiro128plus {
      * @return vector of random floats
      */
     float32x4_t get_float(void) {
+        // could be improved by not using a linear transformation
+        // for better methods see
+        // (Drawing random floating-point numbers from an interval)
+        // [https://hal.science/hal-03282794v4/file/rand-in-range.pdf]
         return vdupq_n_f32(a) + vmulq_n_f32(get_reduced_float(), d);
+
+    }
+
+    float32x4_t alternate_get_float(void) {
+        // this might be faster since the uint -> float conversion is directly
+        // supported in neon
+        return vdupq_n_f32(a) + vmulq_n_f32(vcvtq_f32_u32(next()), k);
     }
 
     float32x4_t operator()() {
         return get_float();
+        // return alternate_get_float();
     }
 };

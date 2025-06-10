@@ -1,14 +1,22 @@
 /**
- * @brief Modified from code by David Blackman and Sebastiano Vigna
- * (vigna@acm.org) by Sam Thompson
+ * @brief Modified from code by David Blackman, Sebastiano Vigna, and Sam
+ * Thompson (vigna@acm.org)
  */
 
 #pragma once
 
 #include "vexmath/fast_prng/SplitMix32.hpp"
+#include <cstdint>
 #include <random>
 #include <stdint.h>
 
+/**
+ * @class Xoroshiro128plus
+ * @brief Fast PRNG generator of uint32_t numbers. Satisfies
+ * UniformRandomBitGenerator so it can be used with the distributions from the
+ * C++ random library
+ *
+ */
 class Xoroshiro128plus {
   private:
     inline uint32_t rotl(const uint32_t x, int k) {
@@ -16,11 +24,9 @@ class Xoroshiro128plus {
     }
 
   protected:
-    uint32_t s[4];
+    uint32_t state[4];
 
   public:
-    Xoroshiro128plus() {}
-
     /**
      * @brief Explicit constructor which sets the rng seed.
      * @param seed the random seed
@@ -34,23 +40,23 @@ class Xoroshiro128plus {
         // Shuffle the seed generator 8 times
         seed_generator.shuffle();
         for (int i = 0; i < 4; i++) {
-            s[i] = seed_generator.next();
+            state[i] = seed_generator.next();
         }
     }
 
     uint32_t next(void) {
-        const uint32_t result = s[0] + s[3];
+        const uint32_t result = state[0] + state[3];
 
-        const uint32_t t = s[1] << 9;
+        const uint32_t t = state[1] << 9;
 
-        s[2] ^= s[0];
-        s[3] ^= s[1];
-        s[1] ^= s[2];
-        s[0] ^= s[3];
+        state[2] ^= state[0];
+        state[3] ^= state[1];
+        state[1] ^= state[2];
+        state[0] ^= state[3];
 
-        s[2] ^= t;
+        state[2] ^= t;
 
-        s[3] = rotl(s[3], 11);
+        state[3] = rotl(state[3], 11);
 
         return result;
     }
@@ -72,18 +78,18 @@ class Xoroshiro128plus {
         for (int i = 0; i < sizeof JUMP / sizeof *JUMP; i++)
             for (int b = 0; b < 32; b++) {
                 if (JUMP[i] & UINT32_C(1) << b) {
-                    s0 ^= s[0];
-                    s1 ^= s[1];
-                    s2 ^= s[2];
-                    s3 ^= s[3];
+                    s0 ^= state[0];
+                    s1 ^= state[1];
+                    s2 ^= state[2];
+                    s3 ^= state[3];
                 }
                 next();
             }
 
-        s[0] = s0;
-        s[1] = s1;
-        s[2] = s2;
-        s[3] = s3;
+        state[0] = s0;
+        state[1] = s1;
+        state[2] = s2;
+        state[3] = s3;
     }
 
     /* This is the long-jump function for the generator. It is equivalent to
@@ -104,83 +110,34 @@ class Xoroshiro128plus {
         for (int i = 0; i < sizeof LONG_JUMP / sizeof *LONG_JUMP; i++)
             for (int b = 0; b < 32; b++) {
                 if (LONG_JUMP[i] & UINT32_C(1) << b) {
-                    s0 ^= s[0];
-                    s1 ^= s[1];
-                    s2 ^= s[2];
-                    s3 ^= s[3];
+                    s0 ^= state[0];
+                    s1 ^= state[1];
+                    s2 ^= state[2];
+                    s3 ^= state[3];
                 }
                 next();
             }
 
-        s[0] = s0;
-        s[1] = s1;
-        s[2] = s2;
-        s[3] = s3;
-    }
-};
-
-class uniform_int32_t : public Xoroshiro128plus {
-  private:
-    int32_t a;
-    int32_t b;
-    std::uniform_int_distribution<int> dist;
-
-  public:
-    uniform_int32_t() {}
-
-    explicit uniform_int32_t(int32_t a, int32_t b, uint64_t seed)
-        : a(a),
-          b(b),
-          dist(a,b)
-           {
-        setSeed(seed);
+        state[0] = s0;
+        state[1] = s1;
+        state[2] = s2;
+        state[3] = s3;
     }
 
-    int32_t get_int() {
-        return dist(*this);
-    }
-    int32_t operator()() {
-        return get_int();
-    }
-};
+    // needed for satisfying UniformRandomBitGenerator
+    using result_type = uint32_t;
 
-class uniform_float32_t : public Xoroshiro128plus {
-  private:
-    float a;
-    float b;
-    float d;
+    static constexpr result_type value = 1;
 
-  public:
-    uniform_float32_t() {}
-
-    explicit uniform_float32_t(float a, float b, uint64_t seed)
-        : a(a),
-          b(b) {
-        d = b - a;
-        setSeed(seed);
+    static constexpr result_type min() {
+        return 0;
     }
 
-    /**
-     * @brief makes a random floating point number in the range of [0,1)
-     *
-     * @return returns a random float in the range [0,1)
-     */
-    float get_reduced_float(void) {
-        const uint32_t exponent = 127U << 23;
-        uint32_t manipulated_uint = exponent | (next() >> 9);
-        return reinterpret_cast<float&>(manipulated_uint) - 1.0;
+    static constexpr result_type max() {
+        return UINT32_MAX;
     }
 
-    /**
-     * @brief makes vector of floating point numbers in the range of [a,b)
-     *
-     * @return vector of random floats
-     */
-    float get_float(void) {
-        return a + (d * get_reduced_float());
-    }
-
-    float operator()() {
-        return get_float();
+    result_type operator()() {
+        return next();
     }
 };
