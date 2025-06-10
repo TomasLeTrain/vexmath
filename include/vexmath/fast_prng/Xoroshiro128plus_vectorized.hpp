@@ -142,7 +142,7 @@ class Vuniform_int32_t : public VXoroshiro128plus {
     void setBounds(int32_t a, int32_t b) {
         this->a = a;
         this->b = a;
-        this->d = b - a + 1;
+        this->d = b - a;
     }
 
     // TODO: technically biased, maybe a rejection sampling approach could be
@@ -152,7 +152,7 @@ class Vuniform_int32_t : public VXoroshiro128plus {
         // the modulus is not implemented in arm neon, so it is likely not
         // vectorized. would be a good idea to switch to one of the alternatives
         // outlined above
-        return vdupq_n_f32(a) + (vreinterpretq_s32_u32(next()) % d);
+        return vdupq_n_s32(a) + (vreinterpretq_s32_u32(next()) % d);
     }
 
     int32x4_t operator()() {
