@@ -133,6 +133,7 @@ class Vuniform_int32_t : public VXoroshiro128plus {
     explicit Vuniform_int32_t(uint64_t seed)
         : VXoroshiro128plus(seed) {}
 
+    // TODO: do bound checks so that a < b
     explicit Vuniform_int32_t(int32_t a, int32_t b, uint64_t seed)
         : a(a),
           b(b),
@@ -141,18 +142,16 @@ class Vuniform_int32_t : public VXoroshiro128plus {
 
     void setBounds(int32_t a, int32_t b) {
         this->a = a;
-        this->b = a;
-        this->d = b - a;
+        this->b = b;
+        this->d = b - a + 1;
     }
 
     // TODO: technically biased, maybe a rejection sampling approach could be
     // tried(although its not ideal since we are working with vectors)
-    // could also try to convert to float,manipulate it, then convert to int
     int32x4_t get_int() {
         // the modulus is not implemented in arm neon, so it is likely not
-        // vectorized. would be a good idea to switch to one of the alternatives
-        // outlined above
-        return vdupq_n_s32(a) + (vreinterpretq_s32_u32(next()) % d);
+        // vectorized.
+        return vdupq_n_s32(a) + vreinterpretq_s32_u32(next() % d);
     }
 
     int32x4_t operator()() {
@@ -189,7 +188,7 @@ class Vuniform_float32_t : public VXoroshiro128plus {
      *
      * @return vector of random floats
      */
-    float32x4_t get_reduced_float(void) {
+    inline float32x4_t get_reduced_float(void) {
         // techincally discards some of bits generated, however the discarded
         // (lowest) bits are of lower quality anyways.
         uint32x4_t Vexponent = vdupq_n_u32(127U << 23);
@@ -202,23 +201,24 @@ class Vuniform_float32_t : public VXoroshiro128plus {
      *
      * @return vector of random floats
      */
-    float32x4_t get_float(void) {
+    inline float32x4_t alternative_get_float(void) {
+        // slower due to more instructions being used
+        // return vdupq_n_f32(a) + vmulq_n_f32(get_reduced_float(), d);
+        return vmlaq_n_f32(vdupq_n_f32(a), get_reduced_float(), d);
+    }
+
+    inline float32x4_t get_float(void) {
+        // faster than bit hacks since the conversion is directly
+        // supported in neon
         // could be improved by not using a linear transformation
         // for better methods see
         // (Drawing random floating-point numbers from an interval)
         // [https://hal.science/hal-03282794v4/file/rand-in-range.pdf]
-        return vdupq_n_f32(a) + vmulq_n_f32(get_reduced_float(), d);
-
-    }
-
-    float32x4_t alternate_get_float(void) {
-        // this might be faster since the uint -> float conversion is directly
-        // supported in neon
-        return vdupq_n_f32(a) + vmulq_n_f32(vcvtq_f32_u32(next()), k);
+        // a = a + (float)(next()) * k
+        return vmlaq_n_f32(vdupq_n_f32(a), vcvtq_f32_u32(next()), k);
     }
 
     float32x4_t operator()() {
         return get_float();
-        // return alternate_get_float();
     }
 };
