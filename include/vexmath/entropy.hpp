@@ -11,6 +11,11 @@
 #include <cstdio>
 #include <inttypes.h>
 
+/**
+ * @class FnvHasher
+ * @brief Simple hasher that generates randomly distributed uint64_t's from data
+ *
+ */
 class FnvHasher {
   private:
     uint64_t hash = 14695981039346656037ull;
@@ -41,17 +46,38 @@ class FnvHasher {
     }
 };
 
+/**
+ * @brief Generator of entropy using telemetry from the Robot.
+ *
+ * @tparam T Type of the result that will be returned
+ */
 template<typename T>
 class RobotEntropy {
   private:
     FnvHasher hasher;
 
   public:
-    uint32_t operator()() {
+    // needed for satisfying UniformRandomBitGenerator
+    using result_type = T;
+
+    /**
+     * @brief Generates a prng number using the robot's telemetry
+     *
+     * @return a random number with type T
+     */
+    result_type operator()() {
         hasher.reset();
         hasher.write_u32(pros::battery::get_voltage());
         hasher.write_u32(pros::battery::get_current());
         hasher.write_u64(pros::micros());
-        return static_cast<T>(hasher.finish());
+        return static_cast<result_type>(hasher.finish());
+    }
+
+    static constexpr result_type min() {
+        return 0;
+    }
+
+    static constexpr result_type max() {
+        return UINT32_MAX;
     }
 };
