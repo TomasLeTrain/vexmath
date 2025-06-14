@@ -165,6 +165,7 @@ class Vuniform_float32_t : public VXoroshiro128plus {
     float b;
     float d;
     float k;
+
   public:
     explicit Vuniform_float32_t(uint64_t seed)
         : VXoroshiro128plus(seed) {}
@@ -176,7 +177,7 @@ class Vuniform_float32_t : public VXoroshiro128plus {
           k(d / static_cast<float>(UINT32_MAX)),
           VXoroshiro128plus(seed) {}
 
-    void set_bounds(float a, float b){
+    void set_bounds(float a, float b) {
         this->a = a;
         this->b = b;
         this->d = b - a;
@@ -220,5 +221,11 @@ class Vuniform_float32_t : public VXoroshiro128plus {
 
     float32x4_t operator()() {
         return get_float();
+    }
+
+    // allows using same generator for different bounds to avoid overhead of
+    // loading and storing vectors
+    inline float32x4_t get_float(float a, float k) {
+        return vmlaq_n_f32(vdupq_n_f32(a), vcvtq_f32_u32(next()), k);
     }
 };
