@@ -3,6 +3,7 @@
 #include "vexmath/fast_prng/Xoroshiro128plus.hpp"
 #include "vexmath/fast_prng/Xoroshiro128plus_vectorized.hpp"
 #include <arm_neon.h>
+#include <cstdint>
 #include <math.h>
 #include <random>
 #include <stdio.h>
@@ -33,6 +34,92 @@ int bench_Vfloat() {
     Vuniform_float32_t Vrand_float_gen(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
     for (int i = 0; i < xoroshiro_N; i += 4) {
         vst1q_f32(output + i, Vrand_float_gen());
+    }
+    return 1;
+}
+
+int bench_doubleNext_Vfloat() {
+    // test vectorized floats
+    Vuniform_float32_t Vrand_float_gen(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
+    for (int i = 0; i < xoroshiro_N; i += 8) {
+        float32x4_t res1, res2;
+        Vrand_float_gen.double_get_float(&res1, &res2);
+        vst1q_f32(output + i, res1);
+        vst1q_f32(output + i + 4, res2);
+    }
+    return 1;
+}
+
+int bench_multiple_Vfloat() {
+    // test vectorized floats
+    Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
+    Vuniform_float32_t Vrand_float_gen2(TEST_FLOAT_MIN*5, TEST_FLOAT_MAX*5, 2000);
+    Vuniform_float32_t Vrand_float_gen3(TEST_FLOAT_MIN/3, TEST_FLOAT_MAX/3, 2000);
+
+    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+        vst1q_f32(output + i,     Vrand_float_gen1());
+        vst1q_f32(output + i + 1, Vrand_float_gen2());
+        vst1q_f32(output + i + 2, Vrand_float_gen3());
+    }
+    return 1;
+}
+
+int bench_one_Vfloat() {
+    float a = TEST_FLOAT_MIN*5;
+    float b = TEST_FLOAT_MAX*5;
+    float k = (b-a) / static_cast<float>(UINT32_MAX);
+
+    float aa = TEST_FLOAT_MIN/3;
+    float bb = TEST_FLOAT_MAX/3;
+    float kk = (bb-aa) / static_cast<float>(UINT32_MAX);
+    // test vectorized floats
+    Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
+
+    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+        vst1q_f32(output + i,     Vrand_float_gen1());
+        vst1q_f32(output + i + 1, Vrand_float_gen1.get_float(a,k));
+        vst1q_f32(output + i + 2, Vrand_float_gen1.get_float(aa,kk));
+    }
+    return 1;
+}
+
+int bench_multiple_double_Vfloat() {
+    // test vectorized floats
+    Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
+    Vuniform_float32_t Vrand_float_gen3(TEST_FLOAT_MIN/3, TEST_FLOAT_MAX/3, 2000);
+
+    float a = TEST_FLOAT_MIN*5;
+    float b = TEST_FLOAT_MAX*5;
+    float k = (b-a) / static_cast<float>(UINT32_MAX);
+
+    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+        float32x4_t res1, res2;
+        Vrand_float_gen1.double_get_float(&res1, &res2,a,k);
+        vst1q_f32(output + i,     res1);
+        vst1q_f32(output + i + 1, res2);
+        vst1q_f32(output + i + 2, Vrand_float_gen3());
+    }
+    return 1;
+}
+
+int bench_one_double_Vfloat() {
+    // test vectorized floats
+    float a = TEST_FLOAT_MIN*5;
+    float b = -TEST_FLOAT_MAX*5;
+    float k = (b-a) / static_cast<float>(UINT32_MAX);
+
+    float aa = TEST_FLOAT_MIN/3;
+    float bb = -TEST_FLOAT_MAX/3;
+    float kk = (bb-aa) / static_cast<float>(UINT32_MAX);
+
+    Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
+
+    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+        float32x4_t res1, res2;
+        Vrand_float_gen1.double_get_float(&res1, &res2,a,k);
+        vst1q_f32(output + i,     res1);
+        vst1q_f32(output + i + 1, res2);
+        vst1q_f32(output + i + 2, Vrand_float_gen1.get_float(aa,kk));
     }
     return 1;
 }
@@ -75,6 +162,10 @@ bool int_validator(){
             return false;
         }
     }
+    return true;
+}
+
+bool multiple_validator(){
     return true;
 }
 
@@ -178,7 +269,7 @@ void int_dist_display(){
 }
 
 void run_xoshiro_bench(const char* s, int (*fn)(),bool (*validator)(),void (*displayer)()) {
-    printf("benching %20s ..", s);
+    printf("benching %40s ..", s);
     fflush(stdout);
     int32_t it0 = pros::micros(), it1;
     double iter = 0;
@@ -225,5 +316,12 @@ void xoroshiro128_test() {
     run_xoshiro_bench("uniform float", bench_float,float_validator,float_dist_display);
     run_xoshiro_bench("uniform int", bench_int,int_validator,int_dist_display);
     run_xoshiro_bench("vector uniform float", bench_Vfloat,float_validator,float_dist_display);
+    run_xoshiro_bench("vector uniform doubleNext float", bench_doubleNext_Vfloat,float_validator,float_dist_display);
     run_xoshiro_bench("vector uniform int", bench_Vint,int_validator,int_dist_display);
+
+    run_xoshiro_bench("vector diff_float multiple", bench_multiple_Vfloat,multiple_validator,float_dist_display);
+    run_xoshiro_bench("vector diff_float one", bench_one_Vfloat,multiple_validator,float_dist_display);
+
+    run_xoshiro_bench("vector diff_float multiple double", bench_multiple_double_Vfloat,multiple_validator,float_dist_display);
+    run_xoshiro_bench("vector diff_float one double", bench_one_double_Vfloat,multiple_validator,float_dist_display);
 }

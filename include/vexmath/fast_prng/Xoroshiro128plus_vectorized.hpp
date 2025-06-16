@@ -18,6 +18,7 @@
 class VXoroshiro128plus {
   protected:
     uint32x4x4_t s;
+    uint32x4x4_t s2;
 
   public:
     /**
@@ -38,11 +39,18 @@ class VXoroshiro128plus {
                               seed_generator.next(),
                               seed_generator.next(),
                               seed_generator.next() };
+
+            uint32_t b[4] = { seed_generator.next(),
+                              seed_generator.next(),
+                              seed_generator.next(),
+                              seed_generator.next() };
+
             s.val[i] = vld1q_u32(a);
+            s.val[i] = vld1q_u32(b);
         }
     }
 
-    uint32x4_t next(void) {
+    inline uint32x4_t next(void) {
         uint32x4_t result = s.val[0] + s.val[3];
 
         uint32x4_t t = vshlq_n_u32(s.val[1], 9);
@@ -58,6 +66,44 @@ class VXoroshiro128plus {
         s.val[3] = vshlq_n_u32(s.val[3], 11) | vshrq_n_u32(s.val[3], 32 - 11);
         return result;
     }
+
+    inline void double_next(uint32x4_t * res1,uint32x4_t * res2) {
+        *res1 = s.val[0] + s.val[3];
+        *res2 = s2.val[0] + s2.val[3];
+
+        uint32x4_t t = vshlq_n_u32(s.val[1], 9);
+        uint32x4_t t2 = vshlq_n_u32(s2.val[1], 9);
+
+        s.val[2]  ^= s.val[0];
+        s2.val[2] ^= s2.val[0];
+
+        s.val[3]  ^= s.val[1];
+        s2.val[3] ^= s.val[1];
+
+        s.val[1]  ^= s.val[2];
+        s2.val[1] ^= s2.val[2];
+
+        s.val[0]  ^= s.val[3];
+        s2.val[0] ^= s2.val[3];
+
+        s.val[2] ^= t;
+        s2.val[2] ^= t2;
+
+        // rotl
+        t = vshrq_n_u32(s.val[3], (32 - 11));
+        t2 = vshrq_n_u32(s2.val[3], (32 - 11));
+
+        s.val[3] = vshlq_n_u32(s.val[3], 11);
+        s2.val[3] = vshlq_n_u32(s2.val[3], 11);
+
+        s.val[3] = vorrq_u32(s.val[3], t);
+        s2.val[3] = vorrq_u32(s2.val[3], t2);
+
+        // s.val[3] = vshlq_n_u32(s.val[3], 11) | vshrq_n_u32(s.val[3], 32 - 11);
+    }
+
+
+
 
     /* This is the jump function for the generator. It is equivalent
        to 2^64 calls to next(); it can be used to generate 2^64
@@ -219,13 +265,40 @@ class Vuniform_float32_t : public VXoroshiro128plus {
         return vmlaq_n_f32(vdupq_n_f32(a), vcvtq_f32_u32(next()), k);
     }
 
-    float32x4_t operator()() {
-        return get_float();
-    }
-
     // allows using same generator for different bounds to avoid overhead of
     // loading and storing vectors
     inline float32x4_t get_float(float a, float k) {
         return vmlaq_n_f32(vdupq_n_f32(a), vcvtq_f32_u32(next()), k);
+    }
+
+    inline void double_get_float(float32x4_t * float1, float32x4_t * float2) {
+        uint32x4_t res1, res2;
+        double_next(&res1, &res2);
+
+        *float1 = vdupq_n_f32(a);
+        float32x4_t tmp1 = vcvtq_f32_u32(res1);
+        float32x4_t tmp2 = vcvtq_f32_u32(res2);
+        *float2 = *float1;
+
+        *float1 = vmlaq_n_f32(*float1, tmp1, k);
+        *float2 = vmlaq_n_f32(*float2, tmp2, k);
+    }
+
+    inline void double_get_float(float32x4_t * float1, float32x4_t * float2, float aa, float kk) {
+        uint32x4_t res1, res2;
+        double_next(&res1, &res2);
+
+        *float1 = vdupq_n_f32(a);
+        *float2 = vdupq_n_f32(aa);
+
+        float32x4_t tmp1 = vcvtq_f32_u32(res1);
+        float32x4_t tmp2 = vcvtq_f32_u32(res2);
+
+        *float1 = vmlaq_n_f32(*float1, tmp1, k);
+        *float2 = vmlaq_n_f32(*float2, tmp2, kk);
+    }
+
+    float32x4_t operator()() {
+        return get_float();
     }
 };
