@@ -3,21 +3,19 @@
 #include <arm_neon.h>
 
 // vectorized fast inverse square root
-inline float32x4_t V_rsqrt(float32x4_t number) {
+inline float32x4_t V_rsqrt(float32x4_t x) {
     uint32x4_t i;
-    float32x4_t x2, y;
-    const float32x4_t threehalfs = vmovq_n_f32(1.5);
-    const float32x4_t half = vmovq_n_f32(0.5);
-    const uint32x4_t magic_number = vmovq_n_u32(0x5f3759df);
+    float32x4_t y;
+    const float32x4_t c1 = vmovq_n_f32(0.703952253f);
+    const float32x4_t c2 = vmovq_n_f32(2.38924456f);
+    const uint32x4_t magic_number = vmovq_n_u32(0x5F1FFFF9);
 
-    x2 = number * half;
-    y = number;
-    i = vreinterpretq_u32_f32(y); // evil floating point bit level hacking
-    i = magic_number - vshrq_n_u32(i, 1); // what the fuck?
-    y = vreinterpretq_f32_u32(y);
-    y = y * (threehalfs - (x2 * y * y)); // 1st iteration
-    //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can
-    // be removed
+    y = x;
+    i = vreinterpretq_u32_f32(y);
+    i = magic_number - vshrq_n_u32(i, 1);
+    y = vreinterpretq_f32_u32(i);
+    y = y * c1 * (c2 - x * y * y);
+    // y = y * (threehalfs - x * y * y); // 2st iteration, unused
 
     return y;
 }
