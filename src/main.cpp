@@ -5,6 +5,7 @@
 #include "vexmath/functions/vectorized_trig.hpp"
 #include "vexmath/functions/vectorized_trig_taylor.hpp"
 #include "vexmath/ziggurat/normal.hpp"
+#include "vexmath/functions/vectorized_sqrt.hpp"
 
 #include <arm_neon.h>
 
@@ -31,7 +32,7 @@ void general_tests() {
     xoroshiro128_test();
     taylor_test();
     // neon_mathfun_test();
-    return;
+    // return;
 
     Vuniform_int32_t rand_int_gen(1, 100, 1230);
     cout << "testing random ints in the range [1, 100]\n";
@@ -105,11 +106,25 @@ void general_tests() {
 
     cout << "testing normal nums\n";
     RobotEntropy<uint32_t> rng;
-    math::ziggurat::NormalPRNG normal_gen(rng());
+    vexmath::ziggurat::NormalPRNG normal_gen(rng());
     for (int i = 0; i < 10; i++) {
         float num = normal_gen.normal(6, 1);
         cout << num << '\n';
     }
+    cout << "testing square root\n";
+    RobotEntropy<uint32_t> sqrt_rng;
+    Vuniform_float32_t sqrt_gen(0,1000,sqrt_rng());
+    float max_diff = 0;
+    for (int i = 0; i < 1000; i++) {
+        auto nums = sqrt_gen.get_float();
+        auto sqrts = Vsqrt(nums);
+
+        max_diff = max(max_diff, std::abs(vgetq_lane_f32(sqrts, 0) - std::sqrt(vgetq_lane_f32(nums, 0))));
+        max_diff = max(max_diff, std::abs(vgetq_lane_f32(sqrts, 1) - std::sqrt(vgetq_lane_f32(nums, 1))));
+        max_diff = max(max_diff, std::abs(vgetq_lane_f32(sqrts, 2) - std::sqrt(vgetq_lane_f32(nums, 2))));
+        max_diff = max(max_diff, std::abs(vgetq_lane_f32(sqrts, 3) - std::sqrt(vgetq_lane_f32(nums, 3))));
+    }
+    cout << "max difference: " << max_diff << '\n';
 }
 
 void opcontrol() {

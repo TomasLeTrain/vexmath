@@ -15,7 +15,7 @@
 #define _FAST_PRNG_SAMPLE_Y(i, U)                           \
     (Y[(i) - 1] * pow(2, 31) + (Y[(i)] - Y[(i) - 1]) * (U))
 
-namespace math {
+namespace vexmath {
 namespace ziggurat {
 struct ziggurat_prng {
   public:
