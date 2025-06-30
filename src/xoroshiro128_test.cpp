@@ -19,26 +19,26 @@ int32_t int_output[xoroshiro_N];
 #define TEST_INT_MIN -10000
 #define TEST_INT_MAX  10000
 
-int bench_float() {
+long long bench_float() {
     // test non - vectorized floats
     Xoroshiro128plus rng(2000);
     std::uniform_real_distribution<float> dist(TEST_FLOAT_MIN,TEST_FLOAT_MAX);
     for (int i = 0; i < xoroshiro_N; i++) {
         output[i] = dist(rng);
     }
-    return 1;
+    return xoroshiro_N;
 }
 
-int bench_Vfloat() {
+long long bench_Vfloat() {
     // test vectorized floats
     Vuniform_float32_t Vrand_float_gen(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
     for (int i = 0; i < xoroshiro_N; i += 4) {
         vst1q_f32(output + i, Vrand_float_gen());
     }
-    return 1;
+    return xoroshiro_N;
 }
 
-int bench_doubleNext_Vfloat() {
+long long bench_doubleNext_Vfloat() {
     // test vectorized floats
     Vuniform_float32_t Vrand_float_gen(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
     for (int i = 0; i < xoroshiro_N; i += 8) {
@@ -47,10 +47,10 @@ int bench_doubleNext_Vfloat() {
         vst1q_f32(output + i, res1);
         vst1q_f32(output + i + 4, res2);
     }
-    return 1;
+    return xoroshiro_N;
 }
 
-int bench_multiple_Vfloat() {
+long long bench_multiple_Vfloat() {
     // test vectorized floats
     Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
     Vuniform_float32_t Vrand_float_gen2(TEST_FLOAT_MIN*5, TEST_FLOAT_MAX*5, 2000);
@@ -61,10 +61,10 @@ int bench_multiple_Vfloat() {
         vst1q_f32(output + i + 1, Vrand_float_gen2());
         vst1q_f32(output + i + 2, Vrand_float_gen3());
     }
-    return 1;
+    return xoroshiro_N * 3;
 }
 
-int bench_one_Vfloat() {
+long long bench_one_Vfloat() {
     float a = TEST_FLOAT_MIN*5;
     float b = TEST_FLOAT_MAX*5;
     float k = (b-a) / static_cast<float>(UINT32_MAX);
@@ -80,10 +80,10 @@ int bench_one_Vfloat() {
         vst1q_f32(output + i + 1, Vrand_float_gen1.get_float(a,k));
         vst1q_f32(output + i + 2, Vrand_float_gen1.get_float(aa,kk));
     }
-    return 1;
+    return xoroshiro_N * 3;
 }
 
-int bench_multiple_double_Vfloat() {
+long long bench_multiple_double_Vfloat() {
     // test vectorized floats
     Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
     Vuniform_float32_t Vrand_float_gen3(TEST_FLOAT_MIN/3, TEST_FLOAT_MAX/3, 2000);
@@ -99,10 +99,10 @@ int bench_multiple_double_Vfloat() {
         vst1q_f32(output + i + 1, res2);
         vst1q_f32(output + i + 2, Vrand_float_gen3());
     }
-    return 1;
+    return xoroshiro_N * 3;
 }
 
-int bench_one_double_Vfloat() {
+long long bench_one_double_Vfloat() {
     // test vectorized floats
     float a = TEST_FLOAT_MIN*5;
     float b = -TEST_FLOAT_MAX*5;
@@ -121,26 +121,26 @@ int bench_one_double_Vfloat() {
         vst1q_f32(output + i + 1, res2);
         vst1q_f32(output + i + 2, Vrand_float_gen1.get_float(aa,kk));
     }
-    return 1;
+    return xoroshiro_N * 3;
 }
 
-int bench_int() {
+long long bench_int() {
     // test non - vectorized ints
     Xoroshiro128plus rng(2000);
     std::uniform_int_distribution<int> dist(TEST_INT_MIN,TEST_INT_MAX);
     for (int i = 0; i < xoroshiro_N; i++) {
         int_output[i] = dist(rng);
     }
-    return 1;
+    return xoroshiro_N;
 }
 
-int bench_Vint() {
+long long bench_Vint() {
     // test vectorized ints
     Vuniform_int32_t Vrand_int_gen(TEST_INT_MIN, TEST_INT_MAX, 2000);
     for (int i = 0; i < xoroshiro_N; i += 4) {
         vst1q_s32(int_output + i, Vrand_int_gen());
     }
-    return 1;
+    return xoroshiro_N;
 }
 
 bool float_validator(){
@@ -268,23 +268,23 @@ void int_dist_display(){
     printf("^%.0f\n",TEST_FLOAT_MAX);
 }
 
-void run_xoshiro_bench(const char* s, int (*fn)(),bool (*validator)(),void (*displayer)()) {
+void run_xoshiro_bench(const char* s, long long (*fn)(),bool (*validator)(),void (*displayer)()) {
     printf("benching %40s ..", s);
     fflush(stdout);
     int32_t it0 = pros::micros(), it1;
-    double iter = 0;
+    long long elements = 0;
     // avoid variations due time of pros::micros
-    for (long long i = 0; i < 200; i++) {
-        iter += fn();
-        i++;
+    for (int i = 0; i < 200; i++) {
+        elements += fn();
     }
     it1 = pros::micros();
     double micro_t0 = (double)it0, micro_t1 = (double)it1;
     // double t0 = micro_t0/1000000.0,t1 = micro_t1/1000000.0;
 
-    double d_microsec = ((micro_t1 - micro_t0) / ((double)iter));
+    elements /= 200;
+    double d_microsec = (micro_t1 - micro_t0) / 200.0;
     double d_millisec = d_microsec / 1000.0;
-    double numbers_microsec = xoroshiro_N / d_microsec;
+    double numbers_microsec = ((double)elements) / d_microsec;
     
     // verify output is valid
     bool valid = validator();
@@ -293,11 +293,9 @@ void run_xoshiro_bench(const char* s, int (*fn)(),bool (*validator)(),void (*dis
         // return;
     }
 
-
-#define REF_FREQ_MHZ 667.0
     printf(
-      " -> %d elements in %3.2f milliseconds -> %3.2f numbers/microsecond\n",
-      xoroshiro_N,
+      " -> %lld elements in %3.2f milliseconds -> %3.2f numbers/microsecond\n",
+      elements,
       d_millisec,
       numbers_microsec);
 
