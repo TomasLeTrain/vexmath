@@ -5,6 +5,12 @@ Math library for PROS projects focused on speed. Currently implements:
 * fast normally-distributed prng generator (modified float-based [implementation of ziggurat algorithm](https://github.com/cd-mcfarland/fast_prng))
 * simple Entropy class to generate random numbers heavily based on [veranda](https://github.com/Gavin-Niederman/veranda)
 
+# Benchmarking
+* Vectorized Xoroshiro generator around 2.55x faster than normal xoroshiro
+* Vectorized trig taylor approximation around 1.5x faster than normal alternative
+
+Full Benchmarking results can be found in [benchmarks/results.md](benchmarks/results.md)
+
 # Credits
 * **Gavin Niederman** - Veranda: A rand RNG source for vexide programs
     * [Source code](https://github.com/Gavin-Niederman/veranda)
