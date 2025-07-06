@@ -27,7 +27,7 @@
  * total instructions: 5
 
     *ysin = xsin + t * (xcos - xsin * t * Vhalf);
-    *ycos = xcos - t * (xsin - xcos * t * Vhalf);
+    *ycos = xcos - t * (xsin + xcos * t * Vhalf);
     
     ----------
 
@@ -36,7 +36,7 @@
             3              2
     sin = vmla xsin, t, (vmls xcos, xsin, t_half)
             5              4
-    cos = vmls xcos, t, (vmls xsin, xcos, t_half)
+    cos = vmls xcos, t, (vmla xsin, xcos, t_half)
 */
 
 
@@ -66,9 +66,9 @@ inline void Vsincos_taylor(float32x4_t x,
     float32x4_t cos = xsin;
 
     // sin = xcos - xsin * (t * 0.5)
-    // cos = xsin - xcos * (t * 0.5)
+    // cos = xsin + xcos * (t * 0.5)
     sin = vmlsq_f32(sin, xsin, t_half);
-    cos = vmlsq_f32(cos, xcos, t_half);
+    cos = vmlaq_f32(cos, xcos, t_half);
 
     // theoretically slower due to pointer dereference + more mov instructions
     // in practice this should be inlined and optimized by the compiler avoiding mul and add instructions
@@ -107,9 +107,9 @@ inline void Vsincos_taylor_delta(float32x4_t t,
     float32x4_t cos = xsin;
 
     // sin = xcos - xsin * (t * 0.5)
-    // cos = xsin - xcos * (t * 0.5)
+    // cos = xsin + xcos * (t * 0.5)
     sin = vmlsq_f32(sin, xsin, t_half);
-    cos = vmlsq_f32(cos, xcos, t_half);
+    cos = vmlaq_f32(cos, xcos, t_half);
 
     // theoretically slower due to pointer dereference + more mov instructions
     // in practice this should be inlined and optimized by the compiler avoiding mul+add instructions
