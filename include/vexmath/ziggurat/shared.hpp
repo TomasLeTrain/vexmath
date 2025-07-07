@@ -2,7 +2,7 @@
  */
 #pragma once
 
-#include "vexmath/fast_prng/Xoroshiro128plus.hpp"
+#include "vexmath/fast_prng/Xoshiro128plus.hpp"
 #include <math.h>
 #include <memory>
 #include <stdlib.h>
@@ -19,7 +19,7 @@ namespace vexmath {
 namespace ziggurat {
 struct ziggurat_prng {
   public:
-    Xoroshiro128plus prng;
+    Xoshiro128plus prng;
 
     union {
         uint32_t l;

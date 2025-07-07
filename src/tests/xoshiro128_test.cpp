@@ -1,17 +1,17 @@
-#include "tests/xoroshiro128_test.hpp"
+#include "tests/xoshiro128_test.hpp"
 #include "api.h"
-#include "vexmath/fast_prng/Xoroshiro128plus.hpp"
-#include "vexmath/fast_prng/Xoroshiro128plus_vectorized.hpp"
+#include "vexmath/fast_prng/Xoshiro128plus.hpp"
+#include "vexmath/fast_prng/Xoshiro128plus_vectorized.hpp"
 #include <arm_neon.h>
 #include <cstdint>
 #include <math.h>
 #include <random>
 #include <stdio.h>
 
-const int xoroshiro_N = 50000;
+const int xoshiro_N = 50000;
 
-float output[xoroshiro_N];
-int32_t int_output[xoroshiro_N];
+float output[xoshiro_N];
+int32_t int_output[xoshiro_N];
 
 #define TEST_FLOAT_MIN -10000.0
 #define TEST_FLOAT_MAX  10000.0
@@ -21,33 +21,33 @@ int32_t int_output[xoroshiro_N];
 
 long long bench_float() {
     // test non - vectorized floats
-    Xoroshiro128plus rng(2000);
+    Xoshiro128plus rng(2000);
     std::uniform_real_distribution<float> dist(TEST_FLOAT_MIN,TEST_FLOAT_MAX);
-    for (int i = 0; i < xoroshiro_N; i++) {
+    for (int i = 0; i < xoshiro_N; i++) {
         output[i] = dist(rng);
     }
-    return xoroshiro_N;
+    return xoshiro_N;
 }
 
 long long bench_Vfloat() {
     // test vectorized floats
     Vuniform_float32_t Vrand_float_gen(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
-    for (int i = 0; i < xoroshiro_N; i += 4) {
+    for (int i = 0; i < xoshiro_N; i += 4) {
         vst1q_f32(output + i, Vrand_float_gen());
     }
-    return xoroshiro_N;
+    return xoshiro_N;
 }
 
 long long bench_doubleNext_Vfloat() {
     // test vectorized floats
     Vuniform_float32_t Vrand_float_gen(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
-    for (int i = 0; i < xoroshiro_N; i += 8) {
+    for (int i = 0; i < xoshiro_N; i += 8) {
         float32x4_t res1, res2;
         Vrand_float_gen.double_get_float(&res1, &res2);
         vst1q_f32(output + i, res1);
         vst1q_f32(output + i + 4, res2);
     }
-    return xoroshiro_N;
+    return xoshiro_N;
 }
 
 long long bench_multiple_Vfloat() {
@@ -56,12 +56,12 @@ long long bench_multiple_Vfloat() {
     Vuniform_float32_t Vrand_float_gen2(TEST_FLOAT_MIN*5, TEST_FLOAT_MAX*5, 2000);
     Vuniform_float32_t Vrand_float_gen3(TEST_FLOAT_MIN/3, TEST_FLOAT_MAX/3, 2000);
 
-    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+    for (int i = 0; i < xoshiro_N - 2; i += 4) {
         vst1q_f32(output + i,     Vrand_float_gen1());
         vst1q_f32(output + i + 1, Vrand_float_gen2());
         vst1q_f32(output + i + 2, Vrand_float_gen3());
     }
-    return xoroshiro_N * 3;
+    return xoshiro_N * 3;
 }
 
 long long bench_one_Vfloat() {
@@ -75,12 +75,12 @@ long long bench_one_Vfloat() {
     // test vectorized floats
     Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
 
-    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+    for (int i = 0; i < xoshiro_N - 2; i += 4) {
         vst1q_f32(output + i,     Vrand_float_gen1());
         vst1q_f32(output + i + 1, Vrand_float_gen1.get_float(a,k));
         vst1q_f32(output + i + 2, Vrand_float_gen1.get_float(aa,kk));
     }
-    return xoroshiro_N * 3;
+    return xoshiro_N * 3;
 }
 
 long long bench_multiple_double_Vfloat() {
@@ -92,14 +92,14 @@ long long bench_multiple_double_Vfloat() {
     float b = TEST_FLOAT_MAX*5;
     float k = (b-a) / static_cast<float>(UINT32_MAX);
 
-    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+    for (int i = 0; i < xoshiro_N - 2; i += 4) {
         float32x4_t res1, res2;
         Vrand_float_gen1.double_get_float(&res1, &res2,a,k);
         vst1q_f32(output + i,     res1);
         vst1q_f32(output + i + 1, res2);
         vst1q_f32(output + i + 2, Vrand_float_gen3());
     }
-    return xoroshiro_N * 3;
+    return xoshiro_N * 3;
 }
 
 long long bench_one_double_Vfloat() {
@@ -114,38 +114,38 @@ long long bench_one_double_Vfloat() {
 
     Vuniform_float32_t Vrand_float_gen1(TEST_FLOAT_MIN, TEST_FLOAT_MAX, 2000);
 
-    for (int i = 0; i < xoroshiro_N - 2; i += 4) {
+    for (int i = 0; i < xoshiro_N - 2; i += 4) {
         float32x4_t res1, res2;
         Vrand_float_gen1.double_get_float(&res1, &res2,a,k);
         vst1q_f32(output + i,     res1);
         vst1q_f32(output + i + 1, res2);
         vst1q_f32(output + i + 2, Vrand_float_gen1.get_float(aa,kk));
     }
-    return xoroshiro_N * 3;
+    return xoshiro_N * 3;
 }
 
 long long bench_int() {
     // test non - vectorized ints
-    Xoroshiro128plus rng(2000);
+    Xoshiro128plus rng(2000);
     std::uniform_int_distribution<int> dist(TEST_INT_MIN,TEST_INT_MAX);
-    for (int i = 0; i < xoroshiro_N; i++) {
+    for (int i = 0; i < xoshiro_N; i++) {
         int_output[i] = dist(rng);
     }
-    return xoroshiro_N;
+    return xoshiro_N;
 }
 
 long long bench_Vint() {
     // test vectorized ints
     Vuniform_int32_t Vrand_int_gen(TEST_INT_MIN, TEST_INT_MAX, 2000);
-    for (int i = 0; i < xoroshiro_N; i += 4) {
+    for (int i = 0; i < xoshiro_N; i += 4) {
         vst1q_s32(int_output + i, Vrand_int_gen());
     }
-    return xoroshiro_N;
+    return xoshiro_N;
 }
 
 bool float_validator(){
     // validates that all generated floats are within the bounds
-    for(int i = 0;i < xoroshiro_N;i++){
+    for(int i = 0;i < xoshiro_N;i++){
         if(output[i] > TEST_FLOAT_MAX || output[i] < TEST_FLOAT_MIN){
             printf("the number %f was generated with bounds: %f, %f\n",output[i], TEST_FLOAT_MIN, TEST_FLOAT_MAX);
             return false;
@@ -156,7 +156,7 @@ bool float_validator(){
 
 bool int_validator(){
     // validates that all generated ints are within the bounds
-    for(int i = 0;i < xoroshiro_N;i++){
+    for(int i = 0;i < xoshiro_N;i++){
         if(int_output[i] > TEST_INT_MAX || int_output[i] < TEST_INT_MIN){
             printf("the number %d was generated with bounds: %d, %d\n",int_output[i], TEST_INT_MIN, TEST_INT_MAX);
             return false;
@@ -182,7 +182,7 @@ void float_dist_display(){
 
     int max_height = 10; // number of characters that the maximum count occupies
 
-    for(int i = 0;i < xoroshiro_N;i++){
+    for(int i = 0;i < xoshiro_N;i++){
         int current_bin = static_cast<int>(
             ((output[i] + TEST_FLOAT_MIN) / TEST_FLOAT_MAX) // [0,1]
             * (number_of_bins-1));
@@ -231,7 +231,7 @@ void int_dist_display(){
     int min_count = 1000000;
     int max_height = 10; // number of characters that the maximum count occupies
 
-    for(int i = 0;i < xoroshiro_N;i++){
+    for(int i = 0;i < xoshiro_N;i++){
         int current_bin = static_cast<int>(
             ((static_cast<float>(int_output[i]) + static_cast<float>(TEST_INT_MIN)) / static_cast<float>(TEST_INT_MAX)) // [0,1]
             * (number_of_bins-1));
@@ -302,15 +302,15 @@ void run_xoshiro_bench(const char* s, long long (*fn)(),bool (*validator)(),void
     // displayer();
 }
 
-void xoroshiro128_test() {
-    for(int i = 0;i < xoroshiro_N;i++){
+void xoshiro128_test() {
+    for(int i = 0;i < xoshiro_N;i++){
         // clears both lists to prevent variance due to caching and whatnot
         output[i] = 0;
         int_output[i] = 0;
     }
 
     printf("---------------------\n");
-    printf("running xoroshiro benchmarks\n");
+    printf("running xoshiro benchmarks\n");
     run_xoshiro_bench("uniform float", bench_float,float_validator,float_dist_display);
     run_xoshiro_bench("uniform int", bench_int,int_validator,int_dist_display);
     run_xoshiro_bench("vector uniform float", bench_Vfloat,float_validator,float_dist_display);

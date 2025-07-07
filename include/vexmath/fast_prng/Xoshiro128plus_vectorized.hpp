@@ -11,11 +11,11 @@
 #include <stdint.h>
 
 /**
- * @class VXoroshiro128plus
- * @brief Vectorized version of the xoroshiro PRNG generator
+ * @class VXoshiro128plus
+ * @brief Vectorized version of the xoshiro PRNG generator
  *
  */
-class VXoroshiro128plus {
+class VXoshiro128plus {
   protected:
     uint32x4x4_t s;
     uint32x4x4_t s2;
@@ -25,7 +25,7 @@ class VXoroshiro128plus {
      * @brief Explicit constructor which sets the rng seed.
      * @param seed the random seed
      */
-    explicit VXoroshiro128plus(uint64_t seed) {
+    explicit VXoshiro128plus(uint64_t seed) {
         setSeed(seed);
     }
 
@@ -169,7 +169,7 @@ class VXoroshiro128plus {
     }
 };
 
-class Vuniform_int32_t : public VXoroshiro128plus {
+class Vuniform_int32_t : public VXoshiro128plus {
   private:
     int32_t a;
     int32_t b;
@@ -177,14 +177,14 @@ class Vuniform_int32_t : public VXoroshiro128plus {
 
   public:
     explicit Vuniform_int32_t(uint64_t seed)
-        : VXoroshiro128plus(seed) {}
+        : VXoshiro128plus(seed) {}
 
     // TODO: do bound checks so that a < b
     explicit Vuniform_int32_t(int32_t a, int32_t b, uint64_t seed)
         : a(a),
           b(b),
           d(b - a + 1),
-          VXoroshiro128plus(seed) {}
+          VXoshiro128plus(seed) {}
 
     void setBounds(int32_t a, int32_t b) {
         this->a = a;
@@ -205,7 +205,7 @@ class Vuniform_int32_t : public VXoroshiro128plus {
     }
 };
 
-class Vuniform_float32_t : public VXoroshiro128plus {
+class Vuniform_float32_t : public VXoshiro128plus {
   private:
     float a;
     float b;
@@ -214,14 +214,14 @@ class Vuniform_float32_t : public VXoroshiro128plus {
 
   public:
     explicit Vuniform_float32_t(uint64_t seed)
-        : VXoroshiro128plus(seed) {}
+        : VXoshiro128plus(seed) {}
 
     explicit Vuniform_float32_t(float a, float b, uint64_t seed)
         : a(a),
           b(b),
           d(b - a),
           k(d / static_cast<float>(UINT32_MAX)),
-          VXoroshiro128plus(seed) {}
+          VXoshiro128plus(seed) {}
 
     void set_bounds(float a, float b) {
         this->a = a;

@@ -1,6 +1,6 @@
 #include "main.h"
 #include "vexmath/entropy.hpp"
-#include "vexmath/fast_prng/Xoroshiro128plus_vectorized.hpp"
+#include "vexmath/fast_prng/Xoshiro128plus_vectorized.hpp"
 #include "vexmath/functions/vectorized_exp_log.hpp"
 #include "vexmath/functions/vectorized_trig.hpp"
 #include "vexmath/functions/vectorized_trig_taylor.hpp"
@@ -11,7 +11,7 @@
 
 #include "tests/neon_mathfun_test.hpp"
 #include "tests/taylor_test.hpp"
-#include "tests/xoroshiro128_test.hpp"
+#include "tests/xoshiro128_test.hpp"
 
 using namespace std;
 
@@ -29,7 +29,7 @@ void autonomous() {}
 
 // TODO: separate tests, test exp and log
 void general_tests() {
-    xoroshiro128_test();
+    xoshiro128_test();
     taylor_test();
     // neon_mathfun_test();
     // return;
@@ -55,7 +55,7 @@ void general_tests() {
         cout << vgetq_lane_f32(current, 3) << endl;
     }
 
-    VXoroshiro128plus rand_gen(1230);
+    VXoshiro128plus rand_gen(1230);
 
     for (int i = 0; i < 10; i++) {
         uint32x4_t current = rand_gen.next();

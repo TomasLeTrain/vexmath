@@ -8,7 +8,7 @@
 
 /**
  * @brief A random number generator using the splitmix64 algorithm - this is
- * provided for generating the shuffle table within the main Xoroshiro256+
+ * provided for generating the shuffle table within the main Xoshiro256+
  * algorithm.
  */
 class SplitMix32 {

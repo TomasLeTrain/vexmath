@@ -11,13 +11,13 @@
 #include <stdint.h>
 
 /**
- * @class Xoroshiro128plus
+ * @class Xoshiro128plus
  * @brief Fast PRNG generator of uint32_t numbers. Satisfies
  * UniformRandomBitGenerator so it can be used with the distributions from the
  * C++ random library
  *
  */
-class Xoroshiro128plus {
+class Xoshiro128plus {
   private:
     inline uint32_t rotl(const uint32_t x, int k) {
         return (x << k) | (x >> (32 - k));
@@ -31,7 +31,7 @@ class Xoroshiro128plus {
      * @brief Explicit constructor which sets the rng seed.
      * @param seed the random seed
      */
-    explicit Xoroshiro128plus(uint64_t seed) {
+    explicit Xoshiro128plus(uint64_t seed) {
         setSeed(seed);
     }
 

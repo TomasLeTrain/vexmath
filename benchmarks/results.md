@@ -3,7 +3,7 @@ All of the following results were obtained by running the respective tests on a 
 Latest benchmarks were taken `June 30 2025`
 
 # Results
-## Xoroshiro benchmarks
+## Xoshiro benchmarks
 The multiple float benchmarks might be questionable since the compiler might be optimizing the elements that get overwritten
 
 ```
@@ -44,7 +44,7 @@ max difference: 0.0179558
 <details>
 <summary>June 25 2025</summary>
 
-## Xoroshiro benchmarks
+## Xoshiro benchmarks
 
 ```
 ---------------------
