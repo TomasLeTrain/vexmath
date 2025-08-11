@@ -1,6 +1,6 @@
 /**
- * @brief Modified from code by David Blackman and Sebastiano Vigna
- * (vigna@acm.org) by Sam Thompson
+ * @brief Modified from code by David Blackman, Sebastiano Vigna
+ * (vigna@acm.org), and Sam Thompson
  */
 
 #pragma once
@@ -67,23 +67,23 @@ class VXoshiro128plus {
         return result;
     }
 
-    inline void double_next(uint32x4_t * res1,uint32x4_t * res2) {
+    inline void double_next(uint32x4_t* res1, uint32x4_t* res2) {
         *res1 = s.val[0] + s.val[3];
         *res2 = s2.val[0] + s2.val[3];
 
         uint32x4_t t = vshlq_n_u32(s.val[1], 9);
         uint32x4_t t2 = vshlq_n_u32(s2.val[1], 9);
 
-        s.val[2]  ^= s.val[0];
+        s.val[2] ^= s.val[0];
         s2.val[2] ^= s2.val[0];
 
-        s.val[3]  ^= s.val[1];
+        s.val[3] ^= s.val[1];
         s2.val[3] ^= s.val[1];
 
-        s.val[1]  ^= s.val[2];
+        s.val[1] ^= s.val[2];
         s2.val[1] ^= s2.val[2];
 
-        s.val[0]  ^= s.val[3];
+        s.val[0] ^= s.val[3];
         s2.val[0] ^= s2.val[3];
 
         s.val[2] ^= t;
@@ -99,11 +99,9 @@ class VXoshiro128plus {
         s.val[3] = vorrq_u32(s.val[3], t);
         s2.val[3] = vorrq_u32(s2.val[3], t2);
 
-        // s.val[3] = vshlq_n_u32(s.val[3], 11) | vshrq_n_u32(s.val[3], 32 - 11);
+        // s.val[3] = vshlq_n_u32(s.val[3], 11) | vshrq_n_u32(s.val[3], 32 -
+        // 11);
     }
-
-
-
 
     /* This is the jump function for the generator. It is equivalent
        to 2^64 calls to next(); it can be used to generate 2^64
@@ -271,7 +269,7 @@ class Vuniform_float32_t : public VXoshiro128plus {
         return vmlaq_n_f32(vdupq_n_f32(a), vcvtq_f32_u32(next()), k);
     }
 
-    inline void double_get_float(float32x4_t * float1, float32x4_t * float2) {
+    inline void double_get_float(float32x4_t* float1, float32x4_t* float2) {
         uint32x4_t res1, res2;
         double_next(&res1, &res2);
 
@@ -284,7 +282,10 @@ class Vuniform_float32_t : public VXoshiro128plus {
         *float2 = vmlaq_n_f32(*float2, tmp2, k);
     }
 
-    inline void double_get_float(float32x4_t * float1, float32x4_t * float2, float aa, float kk) {
+    inline void double_get_float(float32x4_t* float1,
+                                 float32x4_t* float2,
+                                 float aa,
+                                 float kk) {
         uint32x4_t res1, res2;
         double_next(&res1, &res2);
 

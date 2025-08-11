@@ -15,9 +15,22 @@ inline float32x4_t V_rsqrt(float32x4_t x) {
     i = magic_number - vshrq_n_u32(i, 1);
     y = vreinterpretq_f32_u32(i);
     y = y * c1 * (c2 - x * y * y);
-    // y = y * (threehalfs - x * y * y); // 2st iteration, unused
 
     return y;
+}
+
+// vectorized fast inverse square root
+inline float32x4_t V_native_rsqrt(float32x4_t x) {
+    // get initial estimate
+    float32x4_t initial_estimate = vrsqrteq_f32(x);
+
+    // square estimate
+    float32x4_t squared_initial_estimate =
+      vmulq_f32(initial_estimate, initial_estimate);
+
+    // apply step
+    float32x4_t newton_step = vrsqrtsq_f32(squared_initial_estimate, x);
+    return vmulq_f32(initial_estimate, newton_step);
 }
 
 /**
@@ -29,4 +42,15 @@ inline float32x4_t V_rsqrt(float32x4_t x) {
  */
 inline float32x4_t Vsqrt(float32x4_t number) {
     return number * V_rsqrt(number);
+}
+
+/**
+ * @brief Returns square root of vector of numbers. Only an approximation, don't
+ * use if precision is needed
+ *
+ * @param number input vector
+ * @return square root of vector
+ */
+inline float32x4_t V_native_sqrt(float32x4_t number) {
+    return number * V_native_rsqrt(number);
 }
