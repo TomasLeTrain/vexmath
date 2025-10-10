@@ -1,9 +1,11 @@
 ARCHTUPLE=arm-none-eabi-
 DEVICE=VEX EDR V5
 
-MFLAGS=-mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=hard -O3 -ftree-vectorize -g -mthumb
+MFLAGS=-mcpu=cortex-a9 -mfpu=neon-fp16 -mfloat-abi=hard -O3 -ftree-vectorize -mfp16-format=ieee -g -mthumb
 CPPFLAGS=-D_POSIX_THREADS -D_UNIX98_THREAD_MUTEX_ATTRIBUTES -D_POSIX_TIMERS -D_POSIX_MONOTONIC_CLOCK
 GCCFLAGS=-ffunction-sections -fdata-sections -fdiagnostics-color -funwind-tables -fno-strict-aliasing -flto=auto
+
+HEADEREXTS:=h hpp
 
 # Check if the llemu files in libvgl exist. If they do, define macros that the
 # llemu headers in the kernel repo can use to conditionally include the libvgl
@@ -43,7 +45,7 @@ LDFLAGS=$(MFLAGS) $(WARNFLAGS) -nostdlib $(GCCFLAGS)
 SIZEFLAGS=-d --common
 NUMFMTFLAGS=--to=iec --format %.2f --suffix=B
 
-AR:=$(ARCHTUPLE)ar
+AR:=$(ARCHTUPLE)gcc-ar
 # using arm-none-eabi-as generates a listing by default. This produces a super verbose output.
 # Using gcc accomplishes the same thing without the extra output
 AS:=$(ARCHTUPLE)gcc
@@ -153,6 +155,7 @@ ASMSRC=$(foreach asmext,$(ASMEXTS),$(call rwildcard, $(SRCDIR),*.$(asmext), $1))
 ASMOBJ=$(addprefix $(BINDIR)/,$(patsubst $(SRCDIR)/%,%.o,$(call ASMSRC,$1)))
 CSRC=$(foreach cext,$(CEXTS),$(call rwildcard, $(SRCDIR),*.$(cext), $1))
 COBJ=$(addprefix $(BINDIR)/,$(patsubst $(SRCDIR)/%,%.o,$(call CSRC, $1)))
+
 CXXSRC=$(foreach cxxext,$(CXXEXTS),$(call rwildcard, $(SRCDIR),*.$(cxxext), $1))
 CXXOBJ=$(addprefix $(BINDIR)/,$(patsubst $(SRCDIR)/%,%.o,$(call CXXSRC,$1)))
 
@@ -280,6 +283,17 @@ $(BINDIR)/%.$1.o: $(SRCDIR)/%.$1 $(DEPDIR)/$(basename %).d
 	$(RENAMEDEPENDENCYFILE)
 endef
 $(foreach cxxext,$(CXXEXTS),$(eval $(call cxx_rule,$(cxxext))))
+
+
+# should be able to run even if it already exists
+define precompile_hxx_rule
+$(INCDIR)/%.$1.gch: $(INCDIR)/%.$1 FORCE
+$(INCDIR)/%.$1.gch: $(INCDIR)/%.$1 $(DEPDIR)/$(basename %).d FORCE
+	$$(call test_output_2,Compiled $$< ,$(CXX) -c -xc++-header $(INCLUDE) -iquote"$(INCDIR)/$$(dir $$*)" $(CXXFLAGS) $(EXTRA_CXXFLAGS) $(DEPFLAGS) $$<,$(OK_STRING))
+endef
+$(foreach headerext,$(HEADEREXTS),$(eval $(call precompile_hxx_rule,$(headerext))))
+
+FORCE:
 
 define _pros_ld_timestamp
 $(VV)mkdir -p $(dir $(LDTIMEOBJ))
