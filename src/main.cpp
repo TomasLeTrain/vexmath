@@ -27,8 +27,8 @@ void autonomous() {}
 
 // TODO: separate tests, test exp and log
 void general_tests() {
-    xoshiro128_test();
-    taylor_test();
+    // xoshiro128_test();
+    // taylor_test();
     // neon_mathfun_test();
     // return;
 
@@ -112,15 +112,17 @@ void general_tests() {
     cout << "testing square root\n";
 
     RobotEntropy<uint32_t> sqrt_rng;
-    Vuniform_float32_t sqrt_gen(0, 100000, sqrt_rng());
+    Vuniform_float32_t sqrt_gen(-10000, 0, sqrt_rng());
     float custom_max_diff = 0;
 
-    int num_of_samples = 20'000;
+    int num_of_samples = 500;
     auto custom_sqrt_start_time = pros::micros();
 
     for (int i = 0; i < num_of_samples; i++) {
         auto nums = sqrt_gen.get_float();
         auto sqrts = Vsqrt(nums);
+        uint32x4_t isnan = vceqq_f32(sqrts,sqrts);
+        printf("sqrt %d\n",vgetq_lane_u32(isnan, 0));
 
         custom_max_diff = max(custom_max_diff,
                        std::abs(vgetq_lane_f32(sqrts, 0) -
@@ -149,19 +151,21 @@ void general_tests() {
     for (int i = 0; i < num_of_samples; i++) {
         auto nums = sqrt_gen.get_float();
         auto sqrts = V_native_sqrt(nums);
+        uint32x4_t isnan = vceqq_f32(sqrts,sqrts);
+        printf("native sqrt %d\n",vgetq_lane_u32(isnan, 0));
 
-        max_diff = max(max_diff,
-                       std::abs(vgetq_lane_f32(sqrts, 0) -
-                                std::sqrt(vgetq_lane_f32(nums, 0))));
-        max_diff = max(max_diff,
-                       std::abs(vgetq_lane_f32(sqrts, 1) -
-                                std::sqrt(vgetq_lane_f32(nums, 1))));
-        max_diff = max(max_diff,
-                       std::abs(vgetq_lane_f32(sqrts, 2) -
-                                std::sqrt(vgetq_lane_f32(nums, 2))));
-        max_diff = max(max_diff,
-                       std::abs(vgetq_lane_f32(sqrts, 3) -
-                                std::sqrt(vgetq_lane_f32(nums, 3))));
+        // max_diff = max(max_diff,
+        //                std::abs(vgetq_lane_f32(sqrts, 0) -
+        //                         std::sqrt(vgetq_lane_f32(nums, 0))));
+        // max_diff = max(max_diff,
+        //                std::abs(vgetq_lane_f32(sqrts, 1) -
+        //                         std::sqrt(vgetq_lane_f32(nums, 1))));
+        // max_diff = max(max_diff,
+        //                std::abs(vgetq_lane_f32(sqrts, 2) -
+        //                         std::sqrt(vgetq_lane_f32(nums, 2))));
+        // max_diff = max(max_diff,
+        //                std::abs(vgetq_lane_f32(sqrts, 3) -
+        //                         std::sqrt(vgetq_lane_f32(nums, 3))));
     }
 
     auto native_sqrt_end_time = pros::micros();
